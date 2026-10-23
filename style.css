@@ -1,0 +1,8 @@
+body, html { margin: 0; padding: 0; font-family: Arial, sans-serif; height: 100vh; overflow: hidden; background: #1e1e1e; color: white; }
+.navbar { display: flex; justify-content: space-between; padding: 15px 30px; background: #2a2a2a; border-bottom: 2px solid #444; }
+.tabs button { background: #444; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 16px; margin-right: 10px; border-radius: 4px; }
+.tabs button.active { background: #007bff; }
+.controls select { padding: 8px; font-size: 16px; border-radius: 4px; }
+.main-container { display: flex; height: calc(100vh - 65px); }
+#canvas-container { flex: 6; background: #87CEEB; position: relative; }
+#chart-container { flex: 4; background: #ffffff; padding: 20px; box-sizing: border-box; }
