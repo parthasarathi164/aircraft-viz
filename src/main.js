@@ -12,9 +12,7 @@ let responseType = 'free';
 let isRunning = false;
 let currentTimeTracker = 0;
 
-// --- UI EVENT LISTENERS ---
-
-// 1. Simulation Modes
+// Mode and Tab Selection
 document.getElementById('mode-select').addEventListener('change', (e) => {
     currentMode = e.target.value;
     resetSimulation();
@@ -29,13 +27,13 @@ function setTab(type, element) {
     resetSimulation();
 }
 
-// 2. 3D View Buttons
+// 3D View Buttons
 document.getElementById('btn-view-home').onclick = () => setCameraView('home');
 document.getElementById('btn-view-front').onclick = () => setCameraView('front');
 document.getElementById('btn-view-side').onclick = () => setCameraView('side');
 document.getElementById('btn-view-top').onclick = () => setCameraView('top');
 
-// 3. Play / Pause Button
+// Play / Stop Controls
 const playBtn = document.getElementById('btn-play-pause');
 playBtn.addEventListener('click', () => {
     if (isRunning) {
@@ -43,7 +41,6 @@ playBtn.addEventListener('click', () => {
         playBtn.innerText = "Start Simulation";
         playBtn.classList.remove('stopped');
     } else {
-        // If we reached the end previously, reset before playing again
         const maxTime = parseFloat(document.getElementById('sim-duration').value);
         if (currentTimeTracker >= maxTime) {
             resetSimulation();
@@ -52,8 +49,6 @@ playBtn.addEventListener('click', () => {
         isRunning = true;
         playBtn.innerText = "Stop Simulation";
         playBtn.classList.add('stopped');
-        
-        // Ensure chart axes scale to fit the duration
         chartManager.setMaxTime(maxTime);
     }
 });
@@ -69,7 +64,6 @@ function resetSimulation() {
     currentTimeTracker = 0;
 }
 
-// --- ANIMATION LOOP ---
 const clock = new THREE.Clock();
 
 function animate() {
@@ -77,7 +71,6 @@ function animate() {
 
     const dt = clock.getDelta();
     
-    // Only fetch new data if the simulation is running
     if (isRunning) {
         const maxDuration = parseFloat(document.getElementById('sim-duration').value);
         
@@ -85,15 +78,14 @@ function animate() {
             const data = sim.getFrameData(currentMode, responseType, dt);
             currentTimeTracker = data.time;
 
-            // Apply rotation
+            // Apply rotations
             aircraftGroup.rotation.x = data.pitch;
             aircraftGroup.rotation.z = data.roll;
             aircraftGroup.rotation.y = data.yaw;
 
-            // Update Chart
+            // Chart updates
             chartManager.updateData(data.time, data.varValue, data.varName);
         } else {
-            // Reached the end of the specified time
             isRunning = false;
             playBtn.innerText = "Restart Simulation";
             playBtn.classList.remove('stopped');

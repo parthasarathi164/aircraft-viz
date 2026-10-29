@@ -5,7 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 export function init3D(containerId) {
     const container = document.getElementById(containerId);
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87CEEB); // Sky blue
+    scene.background = new THREE.Color(0x0c0f12); // Dark theme background
 
     const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
     
@@ -34,7 +34,7 @@ export function init3D(containerId) {
     scene.add(fillLight);
 
     // Helpers
-    const gridHelper = new THREE.GridHelper(50, 50, 0x000000, 0x444444);
+    const gridHelper = new THREE.GridHelper(50, 50, 0x00e5ff, 0x222222);
     gridHelper.position.y = -3;
     scene.add(gridHelper);
 
@@ -45,7 +45,7 @@ export function init3D(containerId) {
     scene.add(aircraftGroup);
 
     // 1. Manually Load the JPG Texture File
-    // Change 'material_baseColor.jpg' to match your actual image filename inside public/models/textures/
+    // Replace 'material_baseColor.jpg' with your actual image filename inside public/models/textures/
     const textureLoader = new THREE.TextureLoader();
     const planeTexture = textureLoader.load('/models/textures/A380_diffuse.jpg', (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
@@ -61,7 +61,9 @@ export function init3D(containerId) {
         (gltf) => {
             console.log("GLTF geometry loaded successfully!");
             const model = gltf.scene;
-            model.scale.set(0.25, 0.25, 0.25);
+            
+            // Scaled size 0.35 times
+            model.scale.set(0.35, 0.35, 0.35);
 
             // Traverse all child meshes and apply the loaded JPG texture
             model.traverse((child) => {
@@ -96,11 +98,27 @@ export function init3D(containerId) {
 
     function setCameraView(viewName) {
         switch(viewName) {
-            case 'home': camera.position.set(10, 8, 15); break;
-            case 'front': camera.position.set(0, 0, 15); break;
-            case 'side': camera.position.set(15, 0, 0); break;
-            case 'top': camera.position.set(0, 15, 0); break;
+            // Home: Inverted to look from the front-quarter perspective (-X, +Y, -Z)
+            case 'home': 
+                camera.position.set(-15, 12, -22); 
+                break;
+
+            // Front: Inverted along the Z-axis (0, 0, -22) to view the aircraft head-on
+            case 'front': 
+                camera.position.set(0, 0, -22); 
+                break;
+
+            // Side: Inverted along the X-axis (-22, 0, 0) to view from the opposite profile
+            case 'side': 
+                camera.position.set(-22, 0, 0); 
+                break;
+
+            // Top: Positioned looking straight down from positive Y with inverted Z alignment
+            case 'top': 
+                camera.position.set(0, 22, 0.001); 
+                break;
         }
+
         camera.lookAt(0, 0, 0);
         controls.target.set(0, 0, 0);
         controls.update();

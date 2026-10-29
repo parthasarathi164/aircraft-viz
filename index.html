@@ -5,33 +5,203 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aircraft Dynamics Visualization</title>
   <style>
-    body { margin: 0; font-family: sans-serif; display: flex; height: 100vh; }
-    #left-panel { flex: 1; position: relative; }
-    #canvas-container { width: 100%; height: 100%; }
-    #right-panel { width: 400px; padding: 20px; box-sizing: border-box; background: #f5f5f5; display: flex; flex-direction: column; }
-    
-    /* 3D View Buttons Overlay */
-    .view-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; }
-    .view-controls button { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; background: #fff; font-weight: bold; }
-    .view-controls button:hover { background: #ddd; }
+    :root {
+      --bg-dark: #121212;
+      --panel-dark: #1e1e1e;
+      --card-dark: #2a2a2a;
+      --accent-blue: #00e5ff;
+      --accent-blue-hover: #00b8d4;
+      --accent-red: #ff5252;
+      --text-main: #e0e0e0;
+      --text-muted: #a0a0a0;
+      --border-color: #333333;
+    }
 
-    /* Simulation Controls */
-    .sim-controls { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
-    .sim-controls div { display: flex; gap: 10px; align-items: center; }
-    .sim-controls button { padding: 10px; font-weight: bold; cursor: pointer; background: #4CAF50; color: white; border: none; border-radius: 4px;}
-    .sim-controls button.stopped { background: #f44336; }
-    
-    .tabs { display: flex; gap: 10px; margin-bottom: 10px; }
-    canvas#liveChart { flex-grow: 1; max-height: 300px; background: white; border-radius: 8px; margin-top: 10px; }
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow: hidden;
+    }
+
+    #left-panel {
+      flex: 1;
+      position: relative;
+      background-color: #0c0f12;
+    }
+
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* WIDER RIGHT PANEL */
+    #right-panel {
+      width: 540px;
+      flex: 0 0 540px;
+      padding: 24px;
+      background: var(--panel-dark);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      border-left: 1px solid var(--border-color);
+      box-shadow: -4px 0 16px rgba(0,0,0,0.5);
+    }
+
+    h3 {
+      margin: 0 0 6px 0;
+      font-size: 1.4rem;
+      letter-spacing: 0.5px;
+      color: var(--accent-blue);
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 600;
+    }
+
+    select, input {
+      background-color: var(--card-dark);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--accent-blue);
+    }
+
+    .view-controls {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      background: rgba(30, 30, 30, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    }
+
+    .view-controls button {
+      padding: 8px 14px;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--card-dark);
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+
+    .view-controls button:hover {
+      background: var(--accent-blue);
+      color: #000;
+      border-color: var(--accent-blue);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      background: var(--card-dark);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .tabs button {
+      flex: 1;
+      padding: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tabs button.active {
+      background: var(--panel-dark);
+      color: var(--accent-blue);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .sim-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--card-dark);
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .sim-controls .input-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sim-controls button {
+      padding: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--accent-blue);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: background 0.2s ease;
+    }
+
+    .sim-controls button:hover {
+      background: var(--accent-blue-hover);
+    }
+
+    .sim-controls button.stopped {
+      background: var(--accent-red);
+      color: #fff;
+    }
+
+    .chart-wrapper {
+      flex-grow: 1;
+      position: relative;
+      background: var(--card-dark);
+      border-radius: 8px;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      min-height: 280px;
+    }
+
+    canvas#liveChart {
+      width: 100% !important;
+      height: 100% !important;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Left: 3D Scene -->
   <div id="left-panel">
     <div id="canvas-container"></div>
     
-    <!-- View Switcher -->
     <div class="view-controls">
       <button id="btn-view-home">Home View</button>
       <button id="btn-view-front">Front</button>
@@ -40,31 +210,34 @@
     </div>
   </div>
 
-  <!-- Right: Charts and Controls -->
   <div id="right-panel">
     <h3>Flight Dynamics</h3>
     
-    <select id="mode-select">
-      <option value="short-period">Short-Period Mode</option>
-      <option value="phugoid">Phugoid Mode</option>
-      <option value="dutch-roll">Dutch Roll Mode</option>
-    </select>
-    
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label for="mode-select">Dynamics Mode</label>
+      <select id="mode-select">
+        <option value="short-period">Short-Period Mode</option>
+        <option value="phugoid">Phugoid Mode</option>
+        <option value="dutch-roll">Dutch Roll Mode</option>
+      </select>
+    </div>
+
     <div class="tabs">
       <button id="tab-free" class="active">Free Response</button>
       <button id="tab-step">Step Response</button>
     </div>
 
-    <!-- New Simulation Controls -->
     <div class="sim-controls">
-      <div>
-        <label>Duration (sec):</label>
-        <input type="number" id="sim-duration" value="10" min="1" max="100" style="width: 60px;">
+      <div class="input-row">
+        <label for="sim-duration">Duration (Seconds)</label>
+        <input type="number" id="sim-duration" value="15" min="1" max="100" style="width: 80px;">
       </div>
       <button id="btn-play-pause">Start Simulation</button>
     </div>
 
-    <canvas id="liveChart"></canvas>
+    <div class="chart-wrapper">
+      <canvas id="liveChart"></canvas>
+    </div>
   </div>
 
   <script type="module" src="/src/main.js"></script>
