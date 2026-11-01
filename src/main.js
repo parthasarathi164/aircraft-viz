@@ -9,14 +9,45 @@ const sim = new Simulation();
 
 let currentMode = 'short-period';
 let responseType = 'free';
+let selectedVar = '';
 let isRunning = false;
 let currentTimeTracker = 0;
 
-// Mode and Tab Selection
-document.getElementById('mode-select').addEventListener('change', (e) => {
+const modeSelect = document.getElementById('mode-select');
+const varSelect = document.getElementById('var-select');
+const durationInput = document.getElementById('sim-duration');
+const playBtn = document.getElementById('btn-play-pause');
+
+function updateVariableDropdown() {
+    const vars = sim.getVariables(currentMode);
+    varSelect.innerHTML = '';
+    vars.forEach((v) => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        varSelect.appendChild(opt);
+    });
+    if (vars.length > 0) {
+        selectedVar = vars[0];
+    }
+}
+
+// Populate dropdown once simulation data finishes fetching asynchronously
+sim.ready.then(() => {
+    updateVariableDropdown();
+});
+
+modeSelect.addEventListener('change', (e) => {
     currentMode = e.target.value;
+    updateVariableDropdown();
     resetSimulation();
 });
+
+varSelect.addEventListener('change', (e) => {
+    selectedVar = e.target.value;
+    resetSimulation();
+});
+
 document.getElementById('tab-free').addEventListener('click', (e) => setTab('free', e.target));
 document.getElementById('tab-step').addEventListener('click', (e) => setTab('step', e.target));
 
@@ -27,21 +58,26 @@ function setTab(type, element) {
     resetSimulation();
 }
 
-// 3D View Buttons
+durationInput.addEventListener('change', () => {
+    let val = parseFloat(durationInput.value);
+    if (isNaN(val) || val < 1) val = 1;
+    if (val > 350) val = 350;
+    durationInput.value = val;
+    resetSimulation();
+});
+
 document.getElementById('btn-view-home').onclick = () => setCameraView('home');
 document.getElementById('btn-view-front').onclick = () => setCameraView('front');
 document.getElementById('btn-view-side').onclick = () => setCameraView('side');
 document.getElementById('btn-view-top').onclick = () => setCameraView('top');
 
-// Play / Stop Controls
-const playBtn = document.getElementById('btn-play-pause');
 playBtn.addEventListener('click', () => {
     if (isRunning) {
         isRunning = false;
         playBtn.innerText = "Start Simulation";
         playBtn.classList.remove('stopped');
     } else {
-        const maxTime = parseFloat(document.getElementById('sim-duration').value);
+        const maxTime = Math.min(parseFloat(durationInput.value) || 350, 350);
         if (currentTimeTracker >= maxTime) {
             resetSimulation();
         }
@@ -72,19 +108,17 @@ function animate() {
     const dt = clock.getDelta();
     
     if (isRunning) {
-        const maxDuration = parseFloat(document.getElementById('sim-duration').value);
+        const maxDuration = Math.min(parseFloat(durationInput.value) || 350, 350);
         
         if (currentTimeTracker < maxDuration) {
-            const data = sim.getFrameData(currentMode, responseType, dt);
+            const data = sim.getFrameData(currentMode, responseType, selectedVar, dt, maxDuration);
             currentTimeTracker = data.time;
 
-            // Apply rotations
             aircraftGroup.rotation.x = data.pitch;
             aircraftGroup.rotation.z = data.roll;
             aircraftGroup.rotation.y = data.yaw;
 
-            // Chart updates
-            chartManager.updateData(data.time, data.varValue, data.varName);
+            chartManager.updateData(data.time, data.varValue, selectedVar);
         } else {
             isRunning = false;
             playBtn.innerText = "Restart Simulation";

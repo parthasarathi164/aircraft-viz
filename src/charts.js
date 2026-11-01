@@ -14,7 +14,7 @@ export function initChart(canvasId) {
             datasets: [{
                 label: 'Response',
                 data: [],
-                borderColor: '#00e5ff', // Neon Cyan line
+                borderColor: '#00e5ff',
                 backgroundColor: 'rgba(0, 229, 255, 0.1)',
                 borderWidth: 2,
                 pointRadius: 0,
@@ -71,6 +71,7 @@ export function initChart(canvasId) {
             chart.data.labels.push(time);
             chart.data.datasets[0].data.push(value);
             chart.data.datasets[0].label = label;
+            chart.options.scales.y.title.text = label;
             chart.update();
         },
         clearData() {

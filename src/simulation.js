@@ -1,30 +1,86 @@
-// This file acts as your physics engine placeholder. 
-// Later, you can swap this to read JSON data exported from your Python scripts.
 export class Simulation {
-    constructor() { this.time = 0; }
-    
-    getFrameData(mode, responseType, dt) {
-        this.time += dt;
-        let pitch = 0, roll = 0, yaw = 0, varName = "Angle (deg)", varValue = 0;
-
-        // Mathematical approximations for visualization
-        if (mode === 'short-period') {
-            pitch = Math.exp(-0.8 * this.time) * Math.sin(3 * this.time) * 0.2;
-            varValue = pitch * (180/Math.PI);
-            varName = "Pitch Rate (q)";
-        } else if (mode === 'phugoid') {
-            pitch = Math.exp(-0.05 * this.time) * Math.sin(0.5 * this.time) * 0.3;
-            varValue = pitch * (180/Math.PI);
-            varName = "Pitch Angle (theta)";
-        } else if (mode === 'dutch-roll') {
-            yaw = Math.exp(-0.2 * this.time) * Math.sin(2 * this.time) * 0.2;
-            roll = Math.exp(-0.2 * this.time) * Math.sin(2 * this.time + 1.5) * 0.1;
-            varValue = yaw * (180/Math.PI);
-            varName = "Yaw Angle (psi)";
-        }
+    constructor(jsonPath = '/simulation_data.json') {
+        this.time = 0;
+        this.data = null;
+        this.jsonPath = jsonPath;
+        this.isLoaded = false;
         
-        return { pitch, roll, yaw, time: this.time, varValue, varName };
+        // Promise tracking load status
+        this.ready = this.loadData();
     }
-    
-    reset() { this.time = 0; }
+
+    async loadData() {
+        try {
+            const response = await fetch(this.jsonPath);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            this.data = await response.json();
+            this.isLoaded = true;
+            console.log("Simulation data loaded successfully.");
+            return true;
+        } catch (error) {
+            console.error("Failed to load simulation data:", error);
+            return false;
+        }
+    }
+
+    getVariables(mode = 'short-period') {
+        if (!this.isLoaded || !this.data || !this.data[mode]) {
+            return [];
+        }
+        return this.data[mode].variables || [];
+    }
+
+    getFrameData(mode = 'short-period', responseType = 'free', targetVar = 'alpha (deg)', dt = 0.016, maxDuration = 350) {
+        this.time += dt;
+
+        if (!this.isLoaded || !this.data || !this.data[mode]) {
+            return { pitch: 0, roll: 0, yaw: 0, time: this.time, varValue: 0, varName: targetVar };
+        }
+
+        const modeData = this.data[mode][responseType] || this.data[mode]['free'];
+        if (!modeData || modeData.length === 0) {
+            return { pitch: 0, roll: 0, yaw: 0, time: this.time, varValue: 0, varName: targetVar };
+        }
+
+        const cappedTime = Math.min(this.time, maxDuration);
+        
+        // Fast index calculation assuming 0.1s dt
+        const frameIndex = Math.min(Math.floor(cappedTime / 0.1), modeData.length - 2);
+        const idx = Math.max(0, frameIndex);
+
+        const f0 = modeData[idx];
+        const f1 = modeData[idx + 1] || f0;
+
+        const tSpan = f1.time - f0.time;
+        const alpha = tSpan > 0 ? (cappedTime - f0.time) / tSpan : 0;
+        const lerp = (v0, v1) => v0 + alpha * (v1 - v0);
+
+        const pitchDeg = lerp(f0.pitch, f1.pitch);
+        const rollDeg = lerp(f0.roll, f1.roll);
+        const yawDeg = lerp(f0.yaw, f1.yaw);
+
+        const v0 = f0.states[targetVar] !== undefined ? f0.states[targetVar] : 0;
+        const v1 = f1.states[targetVar] !== undefined ? f1.states[targetVar] : 0;
+        const varValue = lerp(v0, v1);
+
+        const toRad = Math.PI / 180;
+
+        return {
+            pitch: pitchDeg * toRad,
+            roll: rollDeg * toRad,
+            yaw: yawDeg * toRad,
+            pitchDeg: pitchDeg,
+            rollDeg: rollDeg,
+            yawDeg: yawDeg,
+            time: cappedTime,
+            varValue: varValue,
+            varName: targetVar
+        };
+    }
+
+    reset() {
+        this.time = 0;
+    }
 }
